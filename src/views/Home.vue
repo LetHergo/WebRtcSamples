@@ -19,16 +19,11 @@ export default {
     return {
       videoElement: [],
       videoStream: [],
-      videoSelect: '',
-      selectors: '',
-      constraints: {
-        video: true
-      }
+      videoSelect: ''
     }
   },
   mounted () {
     this.init()
-    console.log(this.$refs['test1'])
   },
   computed: {},
   methods: {
@@ -48,17 +43,16 @@ export default {
       console.log('Error: ', error)
     },
     async gotDevices (deviceInfos) {
-      // var constraints = new Array(deviceInfos.length)
       for (var i = 0; i !== deviceInfos.length; ++i) {
         var deviceInfo = deviceInfos[i]
-
+        console.log(deviceInfo)
         if (deviceInfo.kind === 'videoinput') {
-          console.log(deviceInfo)
+          // console.log(deviceInfo)
           this.videoElement.push({
             video: {
               deviceId: deviceInfo.deviceId
-            },
-            audio: true
+            }
+            // audio: true
           })
           try {
             const stream = await navigator.mediaDevices.getUserMedia(
@@ -78,7 +72,7 @@ export default {
     },
     gotStream (stream) {
       // window.stream = stream // make stream available to console
-      console.log(stream)
+      // console.log(stream)
       this.videoStream.push(stream)
       this.$refs[`videoWrapper${this.videoStream.length - 1}`][0].srcObject = this.videoStream[this.videoStream.length - 1]
     }
