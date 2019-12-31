@@ -11,26 +11,7 @@
       </el-form>
     </div>
     <div>
-      <el-form ref="form" :model="form" label-width="80px" @submit.native.prevent>
-        <el-form-item label="messages">
-          <el-row type="flex">
-            <div style="width:250px;">
-              <el-input
-                placeholder="请输入信息"
-                v-model="form.message"
-                @change="changeMessage"
-                autofocus
-              >
-                <el-button slot="append">发送</el-button>
-              </el-input>
-            </div>
-            <el-button @click="clear">清空本地信息</el-button>
-          </el-row>
-        </el-form-item>
-      </el-form>
-    </div>
-    <div v-for="(item,index) in list" :key="index">
-       <li>{{item}}</li>
+       <video  ref="remoteVideo" autoplay ></video>
     </div>
   </div>
 </template>
@@ -42,11 +23,10 @@ export default {
   data () {
     return {
       status: '',
-      list: [],
       form: {
-        id: '',
-        message: ''
+        id: ''
       },
+      localStream: '',
       conn: null,
       lastPeerId: null,
       peerClient: {}
@@ -57,47 +37,55 @@ export default {
   },
   computed: {},
   methods: {
-    clear () {
-      this.list = []
+    gotStream (stream) {
+      this.localStream = stream
     },
-    changeMessage () {
-      if (this.conn && this.conn.open) {
-        var msg = this.form.message
-        this.conn.send(msg)
-        this.addMessage(`my:${msg}`)
-      }
-    },
-    addMessage (msg) {
-      this.list.push(msg)
+    handleError (error) {
+      console.log('navigator.MediaDevices.getUserMedia error: ', error.message, error.name)
     },
     changeId () {
-      this.join()
-    },
-    join () {
       // Close old connection
       if (this.conn) {
         this.conn.close()
       }
 
       // Create connection to destination peer specified in the input field
-      this.conn = this.peerClient.connect(this.form.id, {
-        reliable: true
-      })
+      this.conn = this.peerClient.connect(this.form.id)
 
       this.conn.on('open', () => {
         this.status = 'Connected to: ' + this.conn.peer
         console.log('Connected to: ' + this.conn.peer)
+        this.call = this.peerClient.call(this.conn.peer, this.localStream)
+        this.call.on('stream', (stream) => {
+          console.log('received remote stream')
+          this.$refs.remoteVideo.srcObject = stream
+        })
       })
       // Handle incoming data (messages only since this is the signal sender)
-      this.conn.on('data', (data) => {
-        console.log('Data recieved')
-        this.list.push(`Peer:${data}`)
-      })
+      // this.conn.on('data', (data) => {
+      //   console.log('Data recieved')
+      //   this.list.push(`Peer:${data}`)
+      // })
       this.conn.on('close', () => {
+        this.conn.close()
         this.status = 'Connection closed'
       })
     },
     initPeer () {
+      if (this.localStream) {
+        this.localStream.getTracks().forEach(track => {
+          track.stop()
+        })
+      }
+      const constraints = {
+        audio: true,
+        video: true
+      }
+
+      navigator.mediaDevices
+        .getUserMedia(constraints)
+        .then(this.gotStream)
+        .catch(this.handleError)
       this.peerClient = new Peer(null, {
         debug: 2
       })
@@ -109,6 +97,10 @@ export default {
         } else {
           this.lastPeerId = this.peerClient.id
         }
+      })
+      this.peerClient.on('call', (call) => {
+        console.log('send收到call', call)
+        call.answer(this.localStream)
       })
       this.peerClient.on('disconnected', () => {
         this.status = 'Connection lost. Please reconnect'

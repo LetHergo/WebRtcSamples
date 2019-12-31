@@ -50,7 +50,9 @@ export default {
   },
   computed: {},
   methods: {
-    clear () {},
+    clear () {
+      this.list = []
+    },
     addMessage (data) {
       this.list.push(data)
     },

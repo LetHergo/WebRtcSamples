@@ -15,6 +15,16 @@ const routes = [
     component: () => import('../views/client.vue')
   },
   {
+    path: '/clientVideo',
+    name: 'clientVideo',
+    component: () => import('../views/clientVideo.vue')
+  },
+  {
+    path: '/sendVideo',
+    name: 'sendVideo',
+    component: () => import('../views/sendVideo.vue')
+  },
+  {
     path: '/send',
     name: 'send',
     component: () => import('../views/send.vue')
